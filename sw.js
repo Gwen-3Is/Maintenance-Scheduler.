@@ -1,3 +1,14 @@
+// sw.js - FIXED VERSION
+let schedules = []; // Store schedules here
+
+// Listen for messages from main thread
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SYNC_SCHEDULES') {
+        schedules = event.data.schedules || [];
+        console.log('Schedules updated:', schedules.length);
+    }
+});
+
 function checkSchedules() {
     const now = new Date();
     
@@ -7,8 +18,8 @@ function checkSchedules() {
         const taskTime = new Date(task.date + 'T' + task.time);
         const diff = taskTime - now;
         
+        // Notify if within 5 minutes and not past 1 hour overdue
         if (diff <= 300000 && diff > -3600000) {
-            // Show notification
             self.registration.showNotification('🔧 Maintenance Due!', {
                 body: `${task.computer} - ${task.type} at ${task.time}`,
                 icon: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png',
@@ -16,8 +27,8 @@ function checkSchedules() {
                 data: { taskId: task.id }
             });
             
-            // 🔴 MISSING: Mark as notified to prevent repeats!
-            task.notified = true;  // <-- ADD THIS LINE
+            // Mark as notified to prevent repeats
+            task.notified = true;
             
             // Notify main thread to update localStorage
             self.clients.matchAll().then(clients => {
@@ -31,3 +42,6 @@ function checkSchedules() {
         }
     });
 }
+
+// Check every minute
+setInterval(checkSchedules, 60000);
